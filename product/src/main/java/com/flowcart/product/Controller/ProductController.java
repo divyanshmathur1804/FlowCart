@@ -1,9 +1,10 @@
-package com.flowcart.Controller;
+package com.flowcart.product.Controller;
 
 import org.springframework.web.bind.annotation.RestController;
 
-import com.flowcart.Entity.Product;
-import com.flowcart.Service.ProductService;
+import com.flowcart.product.Entity.Product;
+import com.flowcart.product.Service.ProductService;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -17,6 +18,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 @RestController
 public class ProductController {
     private ProductService productService;
+
+    
     public ProductController(ProductService productService) {
         this.productService = productService;
     }
@@ -32,7 +35,7 @@ public class ProductController {
     }
 
     @GetMapping("/product/{id}")
-    public Product getProductById(@PathVariable int id) {
+    public Product getProductById(@PathVariable long id) {
         return productService.getProductById(id);
     }
 }

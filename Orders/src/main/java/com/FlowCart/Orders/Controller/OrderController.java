@@ -1,9 +1,10 @@
-package com.FlowCart.Controller;
+package com.FlowCart.Orders.Controller;
 
 import org.springframework.web.bind.annotation.RestController;
 
-import com.FlowCart.Entity.Orders;
-import com.FlowCart.Service.OrderServices;
+import com.FlowCart.Orders.Entity.Orders;
+import com.FlowCart.Orders.Service.OrderServices;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,8 +32,8 @@ public class OrderController {
     }
 
     @GetMapping("/orders/{id}")
-    public Orders getOrderById(@PathVariable int id) {
-        return orderServices.getOrderById(id);
+    public Orders getOrderById(@PathVariable Integer id) {
+        return orderServices.getOrderById(id).orElseThrow(() -> new RuntimeException("Order not found"));
     }
 
     @PutMapping("/orders/update/{id}")
