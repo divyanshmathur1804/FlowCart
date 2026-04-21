@@ -1,4 +1,4 @@
-package com.FlowCart.Entity;
+package com.FlowCart.Orders.Entity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -11,9 +11,9 @@ public class Orders {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    int orderId;
-    int productId;
-    int quantity;
+    Integer orderId;
+    Integer productId;
+    Integer quantity;
     String orderStatus;
 
     
@@ -22,7 +22,7 @@ public class Orders {
 
 
     
-    public Orders(int orderId, int productId, int quantity, String orderStatus) {
+    public Orders(Integer orderId, Integer productId, Integer quantity, String orderStatus) {
         this.orderId = orderId;
         this.productId = productId;
         this.quantity = quantity;
@@ -42,19 +42,19 @@ public class Orders {
     public int getOrderId() {
         return orderId;
     }
-    public void setOrderId(int orderId) {
+    public void setOrderId(Integer orderId) {
         this.orderId = orderId;
     }
-    public int getProductId() {
+    public Integer getProductId() {
         return productId;
     }
-    public void setProductId(int productId) {
+    public void setProductId(Integer productId) {
         this.productId = productId;
     }
-    public int getQuantity() {
+    public Integer getQuantity() {
         return quantity;
     }
-    public void setQuantity(int quantity) {
+    public void setQuantity(Integer quantity) {
         this.quantity = quantity;
     }
     public String getOrderStatus() {
