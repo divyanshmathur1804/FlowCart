@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: order_user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  product-service:
+    image: product-service
+    container_name: product-service
+    ports:
+      - "8081:8081"
+    environment:
+      - spring.datasource.url=jdbc:postgresql://postgres:5432/product_db
+      - spring.datasource.username=order_user
+      - spring.datasource.password=password
+
+  order-service:
+    image: order-service
+    container_name: order-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      - product-service
+      - postgres
+    environment:
+      - spring.datasource.url=jdbc:postgresql://postgres:5432/order_db
+      - spring.datasource.username=order_user
+      - spring.datasource.password=password
+      - product.service.url=http://product-service:8081/products
+
+volumes:
+  postgres-data:
