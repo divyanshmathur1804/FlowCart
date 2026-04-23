@@ -22,11 +22,12 @@ public class OrderServices {
     @Value("${product.service.url}")
     private String productServiceUrl;
 
-    @Autowired
+    
     private RestTemplate restTemplate;
 
-    public OrderServices(OrdersRepository ordersRepository) {
+    public OrderServices(OrdersRepository ordersRepository, RestTemplate restTemplate) {
         this.ordersRepository = ordersRepository;
+        this.restTemplate = restTemplate;
     }
 
     public ProductDTO getProduct(Integer productId) {
