@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.flowcart.product.Entity.Product;
+import com.flowcart.product.ExceptionHandler.ProductNotFoundException;
 import com.flowcart.product.Repository.ProductRepository;
 
 import jakarta.persistence.EntityManager;
@@ -14,7 +15,7 @@ import jakarta.transaction.Transactional;
 public class ProductService {
     private ProductRepository productRepository;
     //private EntityManager em;
-    public ProductService(ProductRepository productRepository, EntityManager em) {
+    public ProductService(ProductRepository productRepository) {
         this.productRepository = productRepository;
         // this.em = em;
     }
@@ -32,11 +33,11 @@ public class ProductService {
     }
 
     public Product getProductById(long id) {
-        return productRepository.findById(id);
+        return productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
     }
-    public Product getProductByName(String name) {
-        return productRepository.findByName(name);
-    }
+    // public Product getProductByName(String name) {
+    //     return productRepository.findBy(name, nul);
+    // }
 
     @Transactional
     public void deleteProductById(long id) {
@@ -45,7 +46,7 @@ public class ProductService {
 
     @Transactional
     public Product updateProduct(long id, Product updatedProduct) {
-    Product product = productRepository.findById(id);
+    Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
 
     product.setName(updatedProduct.getName());
     product.setPrice(updatedProduct.getPrice());

@@ -10,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.FlowCart.Orders.DTO.ProductDTO;
 import com.FlowCart.Orders.Entity.Orders;
+import com.FlowCart.Orders.ExceptionHandling.OrderNotFoundException;
 import com.FlowCart.Orders.Repository.OrdersRepository;
 
 import jakarta.transaction.Transactional;
@@ -38,11 +39,11 @@ public class OrderServices {
         ProductDTO product = getProduct(order.getProductId());
 
     if (product == null) {
-        throw new RuntimeException("Product not found");
+        throw new OrderNotFoundException("Product Not found");
     }
 
     if (product.getStock() < order.getQuantity()) {
-        throw new RuntimeException("Out of stock");
+        throw new OrderNotFoundException("Out of stock");
     }
 
     return ordersRepository.save(order);
@@ -57,7 +58,7 @@ public class OrderServices {
 
     @Transactional
     public void updateOrderStatus(Integer orderId, String orderStatus) {
-        Orders order = ordersRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found"));
+        Orders order = ordersRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException("Order Not found"));
         order.setOrderStatus(orderStatus);
         ordersRepository.save(order);
         
@@ -65,13 +66,13 @@ public class OrderServices {
 
     @Transactional
     public void updateOrderQuantity(Integer orderId, Integer quantity) {
-        Orders order = ordersRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found"));
+        Orders order = ordersRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException("Order Not found"));
         ProductDTO product = getProduct(order.getProductId());
         if (product == null) {
-            throw new RuntimeException("Product not found");
+            throw new OrderNotFoundException("Product Not found");
         }
         if (product.getStock() < quantity) {
-            throw new RuntimeException("Out of stock");
+            throw new OrderNotFoundException("Out of stock");
         }
         order.setQuantity(quantity);
         ordersRepository.save(order);
@@ -88,11 +89,11 @@ public class OrderServices {
         return ordersRepository.findById(productId);
     }
     public String getOrderStatus(Integer orderId) {
-        Orders order = ordersRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found"));
+        Orders order = ordersRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException("Order Not found"));
         return order.getOrderStatus();
     }
     public int getOrderQuantity(Integer orderId) {
-        Orders order = ordersRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found"));
+        Orders order = ordersRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException("Order Not found"));
         return order.getQuantity();
     }
 

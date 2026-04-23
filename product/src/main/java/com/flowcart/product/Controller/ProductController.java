@@ -29,13 +29,20 @@ public class ProductController {
         return productService.createProduct(product);
     }
 
-    @GetMapping("/product")
+    @GetMapping("/products")
     public List<Product> getAllProducts() {
         return productService.getAllProducts();
     }
 
-    @GetMapping("/product/{id}")
+    @GetMapping("/products/{id}")
     public Product getProductById(@PathVariable long id) {
         return productService.getProductById(id);
     }
+
+    @GetMapping("/debug")
+public String debug() {
+    return "DEBUG OK";
+}
+
+    
 }

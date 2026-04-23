@@ -7,10 +7,15 @@ import com.FlowCart.Orders.Service.OrderServices;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import java.util.List;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 
 
@@ -30,6 +35,12 @@ public class OrderController {
     public Orders createOrder(@RequestBody Orders order) {
         return orderServices.createOrder(order);
     }
+
+    @GetMapping("/orders")
+    public List<Orders> getAllOrders() {
+        return orderServices.getAllOrders();
+    }
+    
 
     @GetMapping("/orders/{id}")
     public Orders getOrderById(@PathVariable Integer id) {
