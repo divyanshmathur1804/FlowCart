@@ -1,6 +1,5 @@
-version: "3.8"
-
 services:
+
   postgres:
     image: postgres:15
     container_name: postgres
@@ -14,43 +13,85 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
+  discovery-service:
+    build: ./Discovery
+    container_name: discovery-service
+    ports:
+      - "8761:8761"
+    environment:
+      - server.port=8761
+      - spring.application.name=discovery-service
+      - eureka.client.register-with-eureka=false
+      - eureka.client.fetch-registry=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
   product-service:
-    build: ./product
-    image: product-service
+    build: ./product   # ⚠️ make sure folder name matches exactly
     container_name: product-service
-    ports:
-      - "8081:8081"
-    depends_on:
-      - postgres
-    environment:
-      - spring.datasource.url=jdbc:postgresql://postgres:5432/product_db
-      - spring.datasource.username=order_user
-      - spring.datasource.password=password
-
-  order-service:
-    build: ./Orders
-    image: order-service
-    container_name: order-service
-    ports:
-      - "8080:8080"
-    depends_on:
-      - product-service
-      - postgres
-    environment:
-      - spring.datasource.url=jdbc:postgresql://postgres:5432/order_db
-      - spring.datasource.username=order_user
-      - spring.datasource.password=password
-      - product.service.url=http://product-service:8081/products
-
-  gateway-service:
-    build: ./Gateway
-    image: gateway-service
-    container_name: gateway-service
     ports:
       - "8082:8082"
     depends_on:
-      - product-service
-      - order-service
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+    environment:
+      - server.port=8082
+      - spring.application.name=product-service
+      - spring.datasource.url=jdbc:postgresql://postgres:5432/product_db
+      - spring.datasource.username=order_user
+      - spring.datasource.password=password
+      - eureka.client.service-url.defaultZone=http://discovery-service:8761/eureka/
+      - eureka.client.register-with-eureka=true
+      - eureka.client.fetch-registry=true
+      - eureka.instance.prefer-ip-address=true
+
+  order-service:
+    build: ./Orders   # ⚠️ verify folder name
+    container_name: order-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+      product-service:
+        condition: service_started
+    environment:
+      - server.port=8081
+      - spring.application.name=order-service
+      - spring.datasource.url=jdbc:postgresql://postgres:5432/order_db
+      - spring.datasource.username=order_user
+      - spring.datasource.password=password
+      - eureka.client.service-url.defaultZone=http://discovery-service:8761/eureka/
+      - eureka.client.register-with-eureka=true
+      - eureka.client.fetch-registry=true
+      - eureka.instance.prefer-ip-address=true
+
+  gateway-service:
+    build: ./Gateway   # ⚠️ verify folder name
+    container_name: gateway-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      order-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+    environment:
+      - server.port=8080
+      - spring.application.name=api-gateway
+      - eureka.client.service-url.defaultZone=http://discovery-service:8761/eureka/
+      - eureka.client.register-with-eureka=true
+      - eureka.client.fetch-registry=true
 
 volumes:
   postgres-data:

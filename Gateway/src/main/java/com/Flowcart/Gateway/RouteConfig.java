@@ -13,10 +13,10 @@ public class RouteConfig {
         return builder.routes()
                 .route("product-service", r -> r
                         .path("/products", "/products/**")
-                        .uri("http://product-service:8081"))
+                        .uri("lb://product-service"))
                 .route("order-service", r -> r
                         .path("/orders", "/orders/**")
-                        .uri("http://order-service:8080"))
+                        .uri("lb://order-service"))
                 .build();
     }
 }
