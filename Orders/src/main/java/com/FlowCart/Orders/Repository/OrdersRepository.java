@@ -9,6 +9,6 @@ import org.springframework.stereotype.Repository;
 
 
 @Repository
-public interface OrdersRepository extends org.springframework.data.jpa.repository.JpaRepository<com.FlowCart.Orders.Entity.Orders, Integer> {
+public interface OrdersRepository extends org.springframework.data.jpa.repository.JpaRepository<com.FlowCart.Orders.Entity.Orders, Long> {
     List<com.FlowCart.Orders.Entity.Orders> findAll();
     }

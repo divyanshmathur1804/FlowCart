@@ -4,10 +4,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
+import com.FlowCart.Orders.Clients.ProductClient;
 import com.FlowCart.Orders.DTO.ProductDTO;
 import com.FlowCart.Orders.Entity.Orders;
 import com.FlowCart.Orders.ExceptionHandling.OrderNotFoundException;
@@ -19,25 +18,26 @@ import jakarta.transaction.Transactional;
 public class OrderServices {
     private OrdersRepository ordersRepository;
     
-    @Value("${product.service.url}")
-    private String productServiceUrl;
+    @Autowired
+    private ProductClient productClient;
 
     
-    private RestTemplate restTemplate;
+    // private RestTemplate restTemplate; // This is used to make REST calls to the product service
 
-    public OrderServices(OrdersRepository ordersRepository, RestTemplate restTemplate) {
+    public OrderServices(OrdersRepository ordersRepository) {
         this.ordersRepository = ordersRepository;
-        this.restTemplate = restTemplate;
+        // this.restTemplate = restTemplate;
     }
 
-    public ProductDTO getProduct(Integer productId) {
-    String url = productServiceUrl + "/" + productId;
-    return restTemplate.getForObject(url, ProductDTO.class);
-}
+    // public ProductDTO getProduct(Integer productId) {
+    // String url = productServiceUrl + "/" + productId;
+    // return restTemplate.getForObject(url, ProductDTO.class); we can use this method also to call the product service but we are using feign client here beacause it is more convenient and easier to use
+
+    
 
     @Transactional
     public Orders createOrder(Orders order) {
-        ProductDTO product = getProduct(order.getProductId());
+        ProductDTO product = productClient.getProduct(order.getProductId());
 
     if (product == null) {
         throw new OrderNotFoundException("Product Not found");
@@ -50,7 +50,7 @@ public class OrderServices {
     return ordersRepository.save(order);
     }
 
-    public Optional<Orders> getOrderById(Integer orderId) {
+    public Optional<Orders> getOrderById(Long orderId) {
 
 
     
@@ -58,7 +58,7 @@ public class OrderServices {
     }
 
     @Transactional
-    public void updateOrderStatus(Integer orderId, String orderStatus) {
+    public void updateOrderStatus(Long orderId, String orderStatus) {
         Orders order = ordersRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException("Order Not found"));
         order.setOrderStatus(orderStatus);
         ordersRepository.save(order);
@@ -66,9 +66,9 @@ public class OrderServices {
     }
 
     @Transactional
-    public void updateOrderQuantity(Integer orderId, Integer quantity) {
+    public void updateOrderQuantity(Long orderId, Long quantity) {
         Orders order = ordersRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException("Order Not found"));
-        ProductDTO product = getProduct(order.getProductId());
+        ProductDTO product = productClient.getProduct(order.getProductId());
         if (product == null) {
             throw new OrderNotFoundException("Product Not found");
         }
@@ -80,20 +80,20 @@ public class OrderServices {
     }
 
     @Transactional
-    public void deleteOrder(Integer orderId) {
+    public void deleteOrder(Long orderId) {
         ordersRepository.deleteById(orderId);
     }
     public List<Orders> getAllOrders() {
         return ordersRepository.findAll();
     }
-    public Optional<Orders> getOrdersByProductId(Integer productId) {
+    public Optional<Orders> getOrdersByProductId(Long productId) {
         return ordersRepository.findById(productId);
     }
-    public String getOrderStatus(Integer orderId) {
+    public String getOrderStatus(Long orderId) {
         Orders order = ordersRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException("Order Not found"));
         return order.getOrderStatus();
     }
-    public int getOrderQuantity(Integer orderId) {
+    public Long getOrderQuantity(Long orderId) {
         Orders order = ordersRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException("Order Not found"));
         return order.getQuantity();
     }

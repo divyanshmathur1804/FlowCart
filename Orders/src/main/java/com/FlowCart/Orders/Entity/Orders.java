@@ -11,9 +11,9 @@ public class Orders {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Integer orderId;
-    Integer productId;
-    Integer quantity;
+    Long orderId;
+    Long productId;
+    Long quantity;
     String orderStatus;
 
     
@@ -22,7 +22,7 @@ public class Orders {
 
 
     
-    public Orders(Integer orderId, Integer productId, Integer quantity, String orderStatus) {
+    public Orders(Long orderId, Long productId, Long quantity, String orderStatus) {
         this.orderId = orderId;
         this.productId = productId;
         this.quantity = quantity;
@@ -39,22 +39,22 @@ public class Orders {
 
 
 
-    public int getOrderId() {
+    public Long getOrderId() {
         return orderId;
     }
-    public void setOrderId(Integer orderId) {
+    public void setOrderId(Long orderId) {
         this.orderId = orderId;
     }
-    public Integer getProductId() {
+    public Long getProductId() {
         return productId;
     }
-    public void setProductId(Integer productId) {
+    public void setProductId(Long productId) {
         this.productId = productId;
     }
-    public Integer getQuantity() {
+    public Long getQuantity() {
         return quantity;
     }
-    public void setQuantity(Integer quantity) {
+    public void setQuantity(Long quantity) {
         this.quantity = quantity;
     }
     public String getOrderStatus() {

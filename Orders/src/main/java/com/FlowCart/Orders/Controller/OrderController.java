@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 
 
@@ -43,25 +42,25 @@ public class OrderController {
     
 
     @GetMapping("/orders/{id}")
-    public Orders getOrderById(@PathVariable Integer id) {
+    public Orders getOrderById(@PathVariable Long id) {
         return orderServices.getOrderById(id).orElseThrow(() -> new RuntimeException("Order not found"));
     }
 
     @PutMapping("/orders/update/{id}")
-    public String updateOrdersById(@PathVariable String id, @RequestBody String entity) {
-        orderServices.updateOrderStatus(Integer.parseInt(id), entity);
+    public String updateOrdersById(@PathVariable Long id, @RequestBody String entity) {
+        orderServices.updateOrderStatus(id, entity);
         
         return entity;
     }
 
     @DeleteMapping("/orders/delete/{id}")
-    public String deleteOrderById(@PathVariable int id) {
+    public String deleteOrderById(@PathVariable Long id) {
         orderServices.deleteOrder(id);
         return "Deleted order with id: " + id;
     }
 
     @GetMapping("order/status/{id}")
-    public String getOrderStatus(@PathVariable int id) {
+    public String getOrderStatus(@PathVariable Long id) {
         return orderServices.getOrderStatus(id);
     }
     
