@@ -2,13 +2,14 @@ package com.flowcart.product.Service;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.flowcart.product.Entity.Product;
 import com.flowcart.product.ExceptionHandler.ProductNotFoundException;
 import com.flowcart.product.Repository.ProductRepository;
 
-import jakarta.persistence.EntityManager;
+// import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -32,6 +33,9 @@ public class ProductService {
 
     }
 
+
+
+    @Cacheable(value = "products", key = "#id")
     public Product getProductById(long id) {
         return productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
     }

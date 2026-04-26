@@ -98,6 +98,11 @@ services:
    container_name: zipkin
    ports:
     - "9411:9411"
-
+  
+  redis:
+   image: redis:7
+   container_name: redis
+   ports:
+    - "6379:6379"
 volumes:
   postgres-data:
