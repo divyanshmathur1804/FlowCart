@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,7 +32,7 @@ public class OrderController {
 
     
     @PostMapping("/orders")
-    public Orders createOrder(@RequestBody Orders order) {
+    public CompletableFuture<Orders> createOrder(@RequestBody Orders order) {
         return orderServices.createOrder(order);
     }
 

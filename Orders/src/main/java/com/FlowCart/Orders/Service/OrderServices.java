@@ -2,6 +2,7 @@ package com.FlowCart.Orders.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,9 @@ import com.FlowCart.Orders.Entity.Orders;
 import com.FlowCart.Orders.ExceptionHandling.OrderNotFoundException;
 import com.FlowCart.Orders.Repository.OrdersRepository;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -35,26 +39,40 @@ public class OrderServices {
 
     
 
-    @Transactional
-    public Orders createOrder(Orders order) {
+// @Transactional wokrs in main thread but when we are using CompletableFuture it runs in a separate thread and @Transactional does not work in a separate thread so we need to use @Transactional in the method that is calling the createOrder method and not in the createOrder method itself
+@Retry(name = "productService", fallbackMethod = "createOrderFallback")
+@CircuitBreaker(name = "productService", fallbackMethod = "createOrderFallback")
+@TimeLimiter(name = "productService", fallbackMethod = "createOrderFallback")
+public CompletableFuture<Orders> createOrder(Orders order) {
+
+    return CompletableFuture.supplyAsync(() -> {
+
         ProductDTO product = productClient.getProduct(order.getProductId());
 
-    if (product == null) {
-        throw new OrderNotFoundException("Product Not found");
+        if (product == null) {
+            throw new RuntimeException("Product not found"); // not using OrderNotFoundException here because it is not an order related exception, it is a product related exception
+        }
+
+        if (product.getStock() < order.getQuantity()) {
+            throw new RuntimeException("Out of stock");
+        }
+
+        return ordersRepository.save(order);
+    });
+}
+
+    public CompletableFuture<Orders> createOrderFallback(Orders order, Throwable throwable) { // This is the fallback method that will be called when the product service is down or not responding
+        Orders fallbackOrder = new Orders();
+        fallbackOrder.setOrderId(order.getOrderId());
+        fallbackOrder.setProductId(order.getProductId());
+        fallbackOrder.setQuantity(order.getQuantity());
+        fallbackOrder.setOrderStatus("FAILED");
+        return CompletableFuture.completedFuture(fallbackOrder);
     }
-
-    if (product.getStock() < order.getQuantity()) {
-        throw new OrderNotFoundException("Out of stock");
-    }
-
-    return ordersRepository.save(order);
-    }
-
-    public Optional<Orders> getOrderById(Long orderId) {
-
 
     
-        return ordersRepository.findById(orderId);
+    public Optional<Orders> getOrderById(Long orderId) {
+    return ordersRepository.findById(orderId);
     }
 
     @Transactional
