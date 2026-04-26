@@ -92,6 +92,12 @@ services:
       - eureka.client.service-url.defaultZone=http://discovery-service:8761/eureka/
       - eureka.client.register-with-eureka=true
       - eureka.client.fetch-registry=true
+  
+  zipkin:
+   image: openzipkin/zipkin
+   container_name: zipkin
+   ports:
+    - "9411:9411"
 
 volumes:
   postgres-data:
