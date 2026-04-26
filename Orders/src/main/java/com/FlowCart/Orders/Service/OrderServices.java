@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.FlowCart.Orders.Clients.ProductClient;
@@ -70,7 +71,7 @@ public CompletableFuture<Orders> createOrder(Orders order) {
         return CompletableFuture.completedFuture(fallbackOrder);
     }
 
-    
+    @Cacheable(value = "orders", key = "#orderId")
     public Optional<Orders> getOrderById(Long orderId) {
     return ordersRepository.findById(orderId);
     }
