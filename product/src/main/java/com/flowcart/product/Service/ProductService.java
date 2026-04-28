@@ -7,10 +7,12 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import com.flowcart.product.Entity.ProcessedOrder;
 import com.flowcart.product.Entity.Product;
 import com.flowcart.product.Events.OrderEvents;
 import com.flowcart.product.Events.StockResultEvent;
 import com.flowcart.product.ExceptionHandler.ProductNotFoundException;
+import com.flowcart.product.Repository.ProcessOrderRepository;
 import com.flowcart.product.Repository.ProductRepository;
 
 import org.springframework.kafka.core.KafkaTemplate;
@@ -21,11 +23,14 @@ import jakarta.transaction.Transactional;
 @Service
 public class ProductService {
     private ProductRepository productRepository;
+    private ProcessOrderRepository processOrderRepository;
 
     @Autowired
     private KafkaTemplate<String, StockResultEvent> kafkaTemplate; // This is used to send messages to the Kafka topic
     //private EntityManager em;
-    public ProductService(ProductRepository productRepository) {
+    public ProductService(ProductRepository productRepository, ProcessOrderRepository processOrderRepository) {
+        this.productRepository = productRepository;
+        this.processOrderRepository = processOrderRepository;
         this.productRepository = productRepository;
         // this.em = em;
     }
@@ -42,11 +47,15 @@ public class ProductService {
 
     }
 
+    @Transactional
     @KafkaListener(topics = "order-events", groupId = "product-group")
     public void consume(OrderEvents event) {
         
 
         Product product = productRepository.findById(event.getProductId()).orElseThrow();
+        if (processOrderRepository.existsById(product.getId())) {
+            return; // If the order has already been processed, skip it to ensure idempotency
+        }
 
         boolean success = false;
 
@@ -55,6 +64,10 @@ public class ProductService {
         productRepository.save(product);
         success = true;
        }
+
+       processOrderRepository.save(
+        new ProcessedOrder(event.getOrderId())
+       );
 
        StockResultEvent result = new StockResultEvent(
         event.getOrderId(),
