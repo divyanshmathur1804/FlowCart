@@ -1,4 +1,6 @@
 package com.FlowCart.Orders.Entity;
+import java.io.Serializable;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -7,7 +9,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "orders")
-public class Orders {
+public class Orders implements Serializable { // using Serializable to convert the object into a byte stream and send it to the kafka topic
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -3,9 +3,11 @@ package com.flowcart.product.Service;
 import java.util.List;
 
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import com.flowcart.product.Entity.Product;
+import com.flowcart.product.Events.OrderEvents;
 import com.flowcart.product.ExceptionHandler.ProductNotFoundException;
 import com.flowcart.product.Repository.ProductRepository;
 
@@ -32,6 +34,17 @@ public class ProductService {
         return productRepository.save(product);
 
     }
+
+    @KafkaListener(topics = "order-events", groupId = "product-group")
+    public void consume(OrderEvents event) {
+        System.out.println("🔥 EVENT RECEIVED: " + event);
+
+        Product product = productRepository.findById(event.getProductId()).orElseThrow();
+
+        product.setStock(product.getStock() - event.getQuantity());
+
+        productRepository.save(product);
+    } // This method listens to the Kafka topic "order-events" and updates the stock of the product when an order is created
 
 
 

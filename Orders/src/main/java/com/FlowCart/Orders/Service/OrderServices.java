@@ -6,11 +6,13 @@ import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import com.FlowCart.Orders.Clients.ProductClient;
 import com.FlowCart.Orders.DTO.ProductDTO;
 import com.FlowCart.Orders.Entity.Orders;
+import com.FlowCart.Orders.Events.OrderEvents;
 import com.FlowCart.Orders.ExceptionHandling.OrderNotFoundException;
 import com.FlowCart.Orders.Repository.OrdersRepository;
 
@@ -26,6 +28,9 @@ public class OrderServices {
     @Autowired
     private ProductClient productClient;
 
+    @Autowired
+    KafkaTemplate<String, OrderEvents> kafkaTemplate; // This is used to send messages to the Kafka topic
+
     
     // private RestTemplate restTemplate; // This is used to make REST calls to the product service
 
@@ -38,7 +43,11 @@ public class OrderServices {
     // String url = productServiceUrl + "/" + productId;
     // return restTemplate.getForObject(url, ProductDTO.class); we can use this method also to call the product service but we are using feign client here beacause it is more convenient and easier to use
 
-    
+    public void sendOrderEvent(OrderEvents orderEvents) {
+        System.out.println("Sending order event: " + orderEvents);
+        kafkaTemplate.send("order-events", orderEvents); // This is used to send messages to the Kafka topic
+    }
+   
 
 // @Transactional wokrs in main thread but when we are using CompletableFuture it runs in a separate thread and @Transactional does not work in a separate thread so we need to use @Transactional in the method that is calling the createOrder method and not in the createOrder method itself
 @Retry(name = "productService", fallbackMethod = "createOrderFallback")
@@ -58,7 +67,9 @@ public CompletableFuture<Orders> createOrder(Orders order) {
             throw new RuntimeException("Out of stock");
         }
 
-        return ordersRepository.save(order);
+        Orders savedOrder = ordersRepository.save(order);
+        sendOrderEvent(new OrderEvents(savedOrder.getProductId(), savedOrder.getQuantity())); // This is used to send messages to the Kafka topic when an order is created
+        return savedOrder;
     });
 }
 
