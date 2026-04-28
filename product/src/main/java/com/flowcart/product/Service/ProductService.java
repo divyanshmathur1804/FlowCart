@@ -7,6 +7,9 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.flowcart.product.Entity.ProcessedOrder;
 import com.flowcart.product.Entity.Product;
 import com.flowcart.product.Events.OrderEvents;
@@ -24,9 +27,11 @@ import jakarta.transaction.Transactional;
 public class ProductService {
     private ProductRepository productRepository;
     private ProcessOrderRepository processOrderRepository;
+    @Autowired
+    private ObjectMapper objectMapper; // This is used to convert the JSON string into an OrderEvents object
 
     @Autowired
-    private KafkaTemplate<String, StockResultEvent> kafkaTemplate; // This is used to send messages to the Kafka topic
+    private KafkaTemplate<String, String> kafkaTemplate; // This is used to send messages to the Kafka topic
     //private EntityManager em;
     public ProductService(ProductRepository productRepository, ProcessOrderRepository processOrderRepository) {
         this.productRepository = productRepository;
@@ -48,34 +53,46 @@ public class ProductService {
     }
 
     @Transactional
-    @KafkaListener(topics = "order-events", groupId = "product-group")
-    public void consume(OrderEvents event) {
-        
+@KafkaListener(topics = "order-events", groupId = "product-group")
+public void consume(String payload) {
 
-        Product product = productRepository.findById(event.getProductId()).orElseThrow();
-        if (processOrderRepository.existsById(product.getId())) {
-            return; // If the order has already been processed, skip it to ensure idempotency
+    try {
+        OrderEvents event = objectMapper.readValue(payload, OrderEvents.class);
+
+        // ✅ Correct idempotency check
+        if (processOrderRepository.existsById(event.getOrderId())) {
+            return;
         }
+
+        Product product = productRepository.findById(event.getProductId())
+                .orElse(null);
 
         boolean success = false;
 
         if (product != null && product.getStock() >= event.getQuantity()) {
-        product.setStock(product.getStock() - event.getQuantity());
-        productRepository.save(product);
-        success = true;
-       }
+            product.setStock(product.getStock() - event.getQuantity());
+            productRepository.save(product);
+            success = true;
+        }
 
-       processOrderRepository.save(
-        new ProcessedOrder(event.getOrderId())
-       );
+        processOrderRepository.save(
+                new ProcessedOrder(event.getOrderId())
+        );
 
-       StockResultEvent result = new StockResultEvent(
-        event.getOrderId(),
-        success
-    );
+        StockResultEvent result = new StockResultEvent(
+                event.getOrderId(),
+                success
+        );
 
-        kafkaTemplate.send("stock-result-events", result); // This is used to send messages to the Kafka topic
-    } // This method listens to the Kafka topic "order-events" and updates the stock of the product when an order is created
+        // (OK for now)
+        kafkaTemplate.send("stock-result-events",
+                objectMapper.writeValueAsString(result));
+
+    } catch (Exception e) {
+        // log properly
+        throw new RuntimeException(e); // let Kafka retry
+    }
+} // This method listens to the Kafka topic "order-events" and updates the stock of the product when an order is created
 
 
 
