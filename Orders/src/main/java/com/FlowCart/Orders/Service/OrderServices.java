@@ -3,9 +3,9 @@ package com.FlowCart.Orders.Service;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +13,7 @@ import com.FlowCart.Orders.Clients.ProductClient;
 import com.FlowCart.Orders.DTO.ProductDTO;
 import com.FlowCart.Orders.Entity.Orders;
 import com.FlowCart.Orders.Events.OrderEvents;
+import com.FlowCart.Orders.Events.StockResultEvent;
 import com.FlowCart.Orders.ExceptionHandling.OrderNotFoundException;
 import com.FlowCart.Orders.Repository.OrdersRepository;
 
@@ -50,37 +51,40 @@ public class OrderServices {
    
 
 // @Transactional wokrs in main thread but when we are using CompletableFuture it runs in a separate thread and @Transactional does not work in a separate thread so we need to use @Transactional in the method that is calling the createOrder method and not in the createOrder method itself
-@Retry(name = "productService", fallbackMethod = "createOrderFallback")
-@CircuitBreaker(name = "productService", fallbackMethod = "createOrderFallback")
-@TimeLimiter(name = "productService", fallbackMethod = "createOrderFallback")
-public CompletableFuture<Orders> createOrder(Orders order) {
+// @Retry(name = "productService", fallbackMethod = "createOrderFallback")
+// @CircuitBreaker(name = "productService", fallbackMethod = "createOrderFallback")
+// @TimeLimiter(name = "productService", fallbackMethod = "createOrderFallback") now we are using kafka event, kafka provides its own retry mechanism and it is more reliable than the retry mechanism provided by resilience4j, so we don't need to use resilience4j's retry mechanism here, we can just rely on kafka's retry mechanism
+public Orders createOrder(Orders order) {
+   order.setOrderStatus("PENDING");
+   Orders savedOrder = ordersRepository.save(order);
+   
+   OrderEvents orderEvents = new OrderEvents(
+    savedOrder.getOrderId(),
+    savedOrder.getProductId(),
+    savedOrder.getQuantity()
+   );
+   sendOrderEvent(orderEvents);
+   return savedOrder;
+}// This method is used to create an order and send an event to the Kafka topic, the event will be consumed by the inventory service to update the stock of the product, if the product service is down or not responding then the fallback method will be called and it will return a failed order with the same order details but with the order status as "FAILED"
 
-    return CompletableFuture.supplyAsync(() -> {
+    // public CompletableFuture<Orders> createOrderFallback(Orders order, Throwable throwable) { // This is the fallback method that will be called when the product service is down or not responding
+    //     Orders fallbackOrder = new Orders();
+    //     fallbackOrder.setOrderId(order.getOrderId());
+    //     fallbackOrder.setProductId(order.getProductId());
+    //     fallbackOrder.setQuantity(order.getQuantity());
+    //     fallbackOrder.setOrderStatus("FAILED");
+    //     return CompletableFuture.completedFuture(fallbackOrder);
+    // } 
 
-        ProductDTO product = productClient.getProduct(order.getProductId());
-
-        if (product == null) {
-            throw new RuntimeException("Product not found"); // not using OrderNotFoundException here because it is not an order related exception, it is a product related exception
+    @KafkaListener(topics = "stock-result-events", groupId = "order-group")
+    public void handleStockResult(StockResultEvent event) {
+        System.out.println("Received stock result event: " + event);
+        if (event.isSuccess()) {
+            updateOrderStatus(event.getOrderId(), "CONFIRMED");
+        } else {
+            updateOrderStatus(event.getOrderId(), "FAILED");
         }
-
-        if (product.getStock() < order.getQuantity()) {
-            throw new RuntimeException("Out of stock");
-        }
-
-        Orders savedOrder = ordersRepository.save(order);
-        sendOrderEvent(new OrderEvents(savedOrder.getProductId(), savedOrder.getQuantity())); // This is used to send messages to the Kafka topic when an order is created
-        return savedOrder;
-    });
-}
-
-    public CompletableFuture<Orders> createOrderFallback(Orders order, Throwable throwable) { // This is the fallback method that will be called when the product service is down or not responding
-        Orders fallbackOrder = new Orders();
-        fallbackOrder.setOrderId(order.getOrderId());
-        fallbackOrder.setProductId(order.getProductId());
-        fallbackOrder.setQuantity(order.getQuantity());
-        fallbackOrder.setOrderStatus("FAILED");
-        return CompletableFuture.completedFuture(fallbackOrder);
-    }
+    } // This method listens to the Kafka topic "stock-result-events" and updates the order status based on the stock result received from the product service
 
     @Cacheable(value = "orders", key = "#orderId")
     public Optional<Orders> getOrderById(Long orderId) {
