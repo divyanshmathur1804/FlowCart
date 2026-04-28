@@ -2,14 +2,18 @@ package com.flowcart.product.Service;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import com.flowcart.product.Entity.Product;
 import com.flowcart.product.Events.OrderEvents;
+import com.flowcart.product.Events.StockResultEvent;
 import com.flowcart.product.ExceptionHandler.ProductNotFoundException;
 import com.flowcart.product.Repository.ProductRepository;
+
+import org.springframework.kafka.core.KafkaTemplate;
 
 // import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -17,6 +21,9 @@ import jakarta.transaction.Transactional;
 @Service
 public class ProductService {
     private ProductRepository productRepository;
+
+    @Autowired
+    private KafkaTemplate<String, StockResultEvent> kafkaTemplate; // This is used to send messages to the Kafka topic
     //private EntityManager em;
     public ProductService(ProductRepository productRepository) {
         this.productRepository = productRepository;
@@ -37,13 +44,24 @@ public class ProductService {
 
     @KafkaListener(topics = "order-events", groupId = "product-group")
     public void consume(OrderEvents event) {
-        System.out.println("🔥 EVENT RECEIVED: " + event);
+        
 
         Product product = productRepository.findById(event.getProductId()).orElseThrow();
 
-        product.setStock(product.getStock() - event.getQuantity());
+        boolean success = false;
 
+        if (product != null && product.getStock() >= event.getQuantity()) {
+        product.setStock(product.getStock() - event.getQuantity());
         productRepository.save(product);
+        success = true;
+       }
+
+       StockResultEvent result = new StockResultEvent(
+        event.getOrderId(),
+        success
+    );
+
+        kafkaTemplate.send("stock-result-events", result); // This is used to send messages to the Kafka topic
     } // This method listens to the Kafka topic "order-events" and updates the stock of the product when an order is created
 
 

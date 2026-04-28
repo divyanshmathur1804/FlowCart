@@ -11,6 +11,8 @@ import jakarta.persistence.Table;
 @Table(name = "orders")
 public class Orders implements Serializable { // using Serializable to convert the object into a byte stream and send it to the kafka topic
 
+    private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long orderId;

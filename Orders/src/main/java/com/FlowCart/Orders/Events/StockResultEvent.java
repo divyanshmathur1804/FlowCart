@@ -7,21 +7,15 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderEvents {
+public class StockResultEvent {
     private Long orderId;
-    private Long productId;
-    private Long quantity;
-
+    private boolean success;
 
     public Long getOrderId() {
         return orderId;
     }
 
-    public Long getProductId() {
-        return productId;
-    }
-
-    public Long getQuantity() {
-        return quantity;
+    public boolean isSuccess() {
+        return success;
     }
 }

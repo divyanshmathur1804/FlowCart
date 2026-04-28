@@ -32,7 +32,7 @@ public class OrderController {
 
     
     @PostMapping("/orders")
-    public CompletableFuture<Orders> createOrder(@RequestBody Orders order) {
+    public Orders createOrder(@RequestBody Orders order) {
         return orderServices.createOrder(order);
     }
 
