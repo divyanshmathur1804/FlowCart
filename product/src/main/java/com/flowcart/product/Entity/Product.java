@@ -1,10 +1,12 @@
 package com.flowcart.product.Entity;
 
+import java.io.Serializable;
+
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "products")
-public class Product {
+public class Product implements Serializable  { // using Serializable to convert the object into a byte stream and send it to the kafka topic
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -13,12 +15,12 @@ public class Product {
     private String name;
 
     private Double price;   // ✅ correct
-    private Integer stock;  // ✅ correct
+    private Long stock;  // ✅ correct
 
     public Product() {
     }
 
-    public Product(Long id, String name, Double price, Integer stock) {
+    public Product(Long id, String name, Double price, Long stock) {
         this.id = id;
         this.name = name;
         this.price = price;
@@ -49,11 +51,11 @@ public class Product {
         this.price = price;
     }
 
-    public Integer getStock() {
+    public Long getStock() {
         return stock;
     }
 
-    public void setStock(Integer stock) {   // ✅ FIXED
+    public void setStock(Long stock) {   // ✅ FIXED
         this.stock = stock;
     }
 }
