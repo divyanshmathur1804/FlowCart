@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
 
   postgres:
@@ -28,10 +30,42 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 20s
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - "9411:9411"
 
   product-service:
-    build: ./product   # ⚠️ make sure folder name matches exactly
+    build: ./product
     container_name: product-service
     ports:
       - "8082:8082"
@@ -40,19 +74,33 @@ services:
         condition: service_healthy
       postgres:
         condition: service_started
+      kafka:
+        condition: service_started
     environment:
       - server.port=8082
       - spring.application.name=product-service
+
+      # DB
       - spring.datasource.url=jdbc:postgresql://postgres:5432/product_db
       - spring.datasource.username=order_user
       - spring.datasource.password=password
+
+      # Kafka
+      - spring.kafka.bootstrap-servers=kafka:9092
+
+      # Redis
+      - spring.data.redis.host=redis
+      - spring.data.redis.port=6379
+
+      # Eureka
       - eureka.client.service-url.defaultZone=http://discovery-service:8761/eureka/
-      - eureka.client.register-with-eureka=true
-      - eureka.client.fetch-registry=true
-      - eureka.instance.prefer-ip-address=true
+
+      # Zipkin
+      - management.tracing.sampling.probability=1.0
+      - management.zipkin.tracing.endpoint=http://zipkin:9411/api/v2/spans
 
   order-service:
-    build: ./Orders   # ⚠️ verify folder name
+    build: ./Orders
     container_name: order-service
     ports:
       - "8081:8081"
@@ -61,21 +109,29 @@ services:
         condition: service_healthy
       postgres:
         condition: service_started
-      product-service:
+      kafka:
         condition: service_started
     environment:
       - server.port=8081
       - spring.application.name=order-service
+
+      # DB
       - spring.datasource.url=jdbc:postgresql://postgres:5432/order_db
       - spring.datasource.username=order_user
       - spring.datasource.password=password
+
+      # Kafka
+      - spring.kafka.bootstrap-servers=kafka:9092
+
+      # Eureka
       - eureka.client.service-url.defaultZone=http://discovery-service:8761/eureka/
-      - eureka.client.register-with-eureka=true
-      - eureka.client.fetch-registry=true
-      - eureka.instance.prefer-ip-address=true
+
+      # Zipkin
+      - management.tracing.sampling.probability=1.0
+      - management.zipkin.tracing.endpoint=http://zipkin:9411/api/v2/spans
 
   gateway-service:
-    build: ./Gateway   # ⚠️ verify folder name
+    build: ./Gateway
     container_name: gateway-service
     ports:
       - "8080:8080"
@@ -90,37 +146,6 @@ services:
       - server.port=8080
       - spring.application.name=api-gateway
       - eureka.client.service-url.defaultZone=http://discovery-service:8761/eureka/
-      - eureka.client.register-with-eureka=true
-      - eureka.client.fetch-registry=true
-  
-  zipkin:
-   image: openzipkin/zipkin
-   container_name: zipkin
-   ports:
-    - "9411:9411"
-  
-  redis:
-   image: redis:7
-   container_name: redis
-   ports:
-    - "6379:6379"
-  
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    container_name: zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
 
-  kafka:
-   image: confluentinc/cp-kafka:7.5.0
-   depends_on:
-    - zookeeper
-   ports:
-    - "9092:9092"
-   environment:
-    KAFKA_BROKER_ID: 1
-    KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-    KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 volumes:
   postgres-data:

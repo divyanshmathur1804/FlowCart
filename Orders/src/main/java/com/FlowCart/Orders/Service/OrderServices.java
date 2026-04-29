@@ -109,7 +109,7 @@ public Orders createOrder(Orders order) {
         }
         } // This method listens to the Kafka topic "stock-result-events" and updates the order status based on the stock result received from the product service
 
-    @Cacheable(value = "orders", key = "#orderId")
+    @Cacheable(value = "orders", key = "#orderId",unless = "#result == null")
     public Optional<Orders> getOrderById(Long orderId) {
     return ordersRepository.findById(orderId);
     }
