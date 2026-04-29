@@ -2,7 +2,6 @@ package com.FlowCart.Orders.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -20,10 +19,6 @@ import com.FlowCart.Orders.ExceptionHandling.OrderNotFoundException;
 import com.FlowCart.Orders.Repository.OrdersRepository;
 import com.FlowCart.Orders.Repository.OutBoxRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.retry.annotation.Retry;
-import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -94,7 +89,11 @@ public Orders createOrder(Orders order) {
     //     return CompletableFuture.completedFuture(fallbackOrder);
     // } 
 
-    @KafkaListener(topics = "stock-result-events", groupId = "order-group")
+    @KafkaListener(topics = {
+        "stock-result-events",
+        "stock-result-events-retry-1",
+        "stock-result-events-retry-2"
+    }, groupId = "order-group")
     public void handleStockResult(String payload) {
         try {
             StockResultEvent event = new ObjectMapper().readValue(payload, StockResultEvent.class);
@@ -132,6 +131,15 @@ public void publishEvents() {
         }
     }
 }// This method is used to publish the events from the outbox table to the Kafka topic, it runs every 5 seconds and checks for the events with status PENDING and sends them to the Kafka topic, if the event is sent successfully then it updates the status of the event to SENT in the outbox table, if there is any exception while sending the event to the Kafka topic then it leaves the status as PENDING and it will retry again in the next scheduled run
+
+@KafkaListener(topics = "stock-result-events-dlt", groupId = "order-dlt-group")
+public void handleDLT(String payload) {
+
+    System.out.println("🔥 Message moved to DLT: " + payload);
+
+    // store in DB / alert / manual fix
+    throw new RuntimeException("Message moved to DLT: " + payload); // For now, just throwing an exception to indicate that the message has been moved to DLT, in real scenario we can store this information in the database or send an alert to the concerned team for manual intervention
+}
 
 private String convertToJson(Object obj) {
     try {
