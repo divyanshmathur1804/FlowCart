@@ -53,7 +53,11 @@ public class ProductService {
     }
 
     @Transactional
-@KafkaListener(topics = "order-events", groupId = "product-group")
+@KafkaListener(topics = {
+        "order-events",
+        "order-events-retry-1",
+        "order-events-retry-2"
+    }, groupId = "product-group") // Listen to the Kafka topic "order-events" and its retry topics
 public void consume(String payload) {
 
     try {
@@ -93,6 +97,15 @@ public void consume(String payload) {
         throw new RuntimeException(e); // let Kafka retry
     }
 } // This method listens to the Kafka topic "order-events" and updates the stock of the product when an order is created
+
+@KafkaListener(topics = "order-events-dlt", groupId = "product-dlt-group")
+public void handleDLT(String payload) {
+
+    System.out.println("🔥 Message moved to DLT: " + payload);
+
+    // store in DB / alert / manual fix
+    throw new RuntimeException("Manual intervention needed for payload: " + payload);
+}
 
 
 
