@@ -4,6 +4,10 @@ FlowCart is a production-grade backend system built using a microservices archit
 
 ---
 
+## Architecture Diagram
+<img width="1400" height="933" alt="image" src="https://github.com/user-attachments/assets/0fe5b799-5a66-4b71-8534-c3ba861767d7" />
+
+
 ## Architecture Overview
 
 User → API Gateway → Order Service → Kafka → Product Service → PostgreSQL
@@ -37,6 +41,11 @@ User → API Gateway → Order Service → Kafka → Product Service → Postgre
 - Scalable deployment on AWS EKS  
 
 ---
+## Screenshots
+<img width="758" height="324" alt="image" src="https://github.com/user-attachments/assets/5caf4bcf-896b-4e07-af4d-df7f240b6570" />
+<img width="1509" height="423" alt="image" src="https://github.com/user-attachments/assets/fe0e354d-e3b8-47f5-b988-76f924140596" />
+
+
 
 ## Deployment
 
