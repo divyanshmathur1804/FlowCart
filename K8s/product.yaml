@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product
+  template:
+    metadata:
+      labels:
+        app: product
+    spec:
+      containers:
+        - name: product
+          image: divyanshmathur0406/product:latest
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SERVER_PORT
+              value: "8082"
+
+            - name: SPRING_APPLICATION_NAME
+              value: product-service
+
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/product_db
+            - name: SPRING_DATASOURCE_USERNAME
+              value: order_user
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: password
+
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: kafka:9092
+
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://discovery:8761/eureka/
+
+            - name: SPRING_REDIS_HOST
+              value: redis
+
+            - name: MANAGEMENT_TRACING_ZIPKIN_ENDPOINT
+              value: http://zipkin:9411/api/v2/spans
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product
+spec:
+  selector:
+    app: product
+  ports:
+    - port: 8082
+      targetPort: 8082
