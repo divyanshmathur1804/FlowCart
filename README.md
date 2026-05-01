@@ -44,6 +44,10 @@ User → API Gateway → Order Service → Kafka → Product Service → Postgre
 ## Screenshots
 <img width="758" height="324" alt="image" src="https://github.com/user-attachments/assets/5caf4bcf-896b-4e07-af4d-df7f240b6570" />
 <img width="1509" height="423" alt="image" src="https://github.com/user-attachments/assets/fe0e354d-e3b8-47f5-b988-76f924140596" />
+<img width="1498" height="232" alt="image" src="https://github.com/user-attachments/assets/1ac2242d-c0fd-499f-a97a-0fdd47e94b46" />
+<img width="1529" height="231" alt="image" src="https://github.com/user-attachments/assets/dd2e5b1d-06f7-4698-bc75-8037182a3fb7" />
+
+
 
 
 
